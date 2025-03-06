@@ -2,9 +2,8 @@ using Unity.Services.Lobbies;
 using UnityEngine;
 using System.Threading.Tasks;
 using Unity.Services.Lobbies.Models;
-using System;
 
-public partial class NetManager : MonoBehaviour //Lobby
+public partial class NetManager //lobby
 {
     //로비 생성
     private async Task CreateNewLobby(string lobbyName = "NewLobby", bool isPrivte = false)
@@ -73,5 +72,32 @@ public partial class NetManager : MonoBehaviour //Lobby
             Debug.Log("로비 찾기 실패" + e);
         }
         return null;
+    }
+
+    //로비 연결을 위해서 호스트가 신호 보내기
+    private async void HandleLobbyHeartbeat()
+    {
+        if (currentLobby != null && currentLobby.HostId == playerID)
+        {
+            heartbeatTimer += Time.deltaTime;
+            if (heartbeatTimer > heartbeatTimerMax)
+            {
+                heartbeatTimer = 0f;
+                await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
+            }
+        }
+    }
+
+    private async void RefreshLobby()
+    {
+        if(currentLobby != null)
+        {
+            refreshTimer += Time.deltaTime;
+            if(refreshTimer > refreshTimerMax)
+            {
+                refreshTimer = 0f;
+                currentLobby = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+            }
+        }
     }
 }

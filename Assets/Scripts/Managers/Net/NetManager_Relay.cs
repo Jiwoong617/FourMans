@@ -7,9 +7,8 @@ using Unity.Services.Relay.Models;
 using UnityEngine;
 using Unity.Services.Lobbies;
 using System.Collections.Generic;
-using Unity.Networking.Transport.Relay;
 
-public partial class NetManager : MonoBehaviour //Relay
+public partial class NetManager // relay
 {
 
     private async Task CreateRelayServer(Lobby lobby) //방을 생성 했다면 relay라는 서버에 저장
