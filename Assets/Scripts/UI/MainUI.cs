@@ -2,7 +2,6 @@ using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class MainUI : MonoBehaviour
 {
@@ -11,11 +10,6 @@ public class MainUI : MonoBehaviour
     private void Start()
     {
         StartCoroutine(testco());
-    }
-
-    public void QuitLobby()
-    {
-        NetManager.Instance.LeaveGame();
     }
 
     IEnumerator testco()

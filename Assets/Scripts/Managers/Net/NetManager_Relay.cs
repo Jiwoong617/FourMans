@@ -11,7 +11,7 @@ using System.Collections.Generic;
 public partial class NetManager // relay
 {
 
-    private async Task CreateRelayServer(Lobby lobby) //방을 생성 했다면 relay라는 서버에 저장
+    private async Task<bool> CreateRelayServer(Lobby lobby) //방을 생성 했다면 relay라는 서버에 저장
     {
         try
         {
@@ -35,19 +35,21 @@ public partial class NetManager // relay
                 );
 
             StartHost();
+            return true;
         }
         catch (RelayServiceException e)
         {
             Debug.Log("Relay 서버 할당 실패 : " + e);
+            return false;
         }
     }
 
-    private async Task JoinRelayServer(string joinCode)
+    private async Task<bool> JoinRelayServer(string joinCode)
     {
         if (string.IsNullOrEmpty(joinCode)) //조인코드가 없으면
         {
             Debug.Log("유효하지 않은 JoinCode 입니다.");
-            return;
+            return false;
         }
 
         try
@@ -71,15 +73,19 @@ public partial class NetManager // relay
 
             StartClient(); // 클라이언트 시작
             Debug.Log("Joined Relay successfully");
+            return true;
         }
         catch (System.Exception e)
         {
             Debug.LogError("Failed to join Relay: " + e.Message);
+            return false;
         }
     }
 
     private string GetRelayCodeInLobby()
     {
+        if (currentLobby == null || currentLobby.Data == null) return null;
+
         if (currentLobby.Data.TryGetValue("relayCode", out var relayJoinCode))
         {
             Debug.Log("successfully get relayjoincode");

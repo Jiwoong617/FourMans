@@ -2,6 +2,7 @@ using Unity.Services.Lobbies;
 using UnityEngine;
 using System.Threading.Tasks;
 using Unity.Services.Lobbies.Models;
+using System.Collections.Generic;
 
 public partial class NetManager //lobby
 {
@@ -20,8 +21,13 @@ public partial class NetManager //lobby
             Debug.Log("new lobby Created" + currentLobby.Id);
             Debug.Log("new lobby Created CODE : " + currentLobby.LobbyCode);
 
+            await LobbyService.Instance.UpdateLobbyAsync(currentLobby.Id, new UpdateLobbyOptions
+            {
+                Data = new()
+            });
+
             //로비를 생성했다면 host가 되어야됨
-            await CreateRelayServer(currentLobby); //로비 생성 후 릴레이 서버 내부에 접근
+            //await CreateRelayServer(currentLobby); //로비 생성 후 릴레이 서버 내부에 접근
         }
         catch (LobbyServiceException e)
         {
@@ -53,6 +59,26 @@ public partial class NetManager //lobby
         catch (LobbyServiceException e)
         {
             Debug.Log("Failed to Join Lobby: " + e);
+        }
+    }
+
+    private async Task LeaveLobby()
+    {
+        try
+        {
+            if (currentLobby != null)
+            {
+                //로비 떠나기
+                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, playerID);
+                Debug.Log("로비에서 나감");
+
+                currentLobby = null;
+            }
+
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError($"로비 또는 Relay 종료 실패: {e.Message}");
         }
     }
 

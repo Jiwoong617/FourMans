@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -10,13 +12,16 @@ public partial class NetManager : Singleton<NetManager>
 {
     //Lobby
     public Lobby currentLobby { get; private set; }
+    private const int maxPlayers = 4;
 
     private string playerID;
     private float heartbeatTimer;
     private float heartbeatTimerMax = 15f;
     private float refreshTimer;
     private float refreshTimerMax = 1f;
-    private const int maxPlayers = 4;
+
+    private bool isRelayExist = false;
+    private Coroutine matchmakingCo = null;
 
     private async void Start()
     {
@@ -57,6 +62,7 @@ public partial class NetManager : Singleton<NetManager>
             Debug.Log("로그인 되지 않았습니다.");
             return;
         }
+        if (currentLobby != null || matchmakingCo != null) return;
 
         //로그인이 되었을 때
         currentLobby = await FindAvailableLobby(); //로비 찾기
@@ -70,8 +76,10 @@ public partial class NetManager : Singleton<NetManager>
         else //로비 존재 시
         {
             await JoinLobbyWithID(currentLobby.Id);
-            await JoinRelayServer(GetRelayCodeInLobby());
+            //await JoinRelayServer(GetRelayCodeInLobby());
         }
+
+        matchmakingCo = StartCoroutine(CheckToRelayStart());
     }
 
     public async void MakeGameRoom(string lobbyName)
@@ -81,6 +89,7 @@ public partial class NetManager : Singleton<NetManager>
             Debug.Log("로그인 되지 않았습니다.");
             return;
         }
+        if (currentLobby != null || matchmakingCo != null) return;
 
         await CreateNewLobby(lobbyName, isPrivte:true);
     }
@@ -92,35 +101,78 @@ public partial class NetManager : Singleton<NetManager>
             Debug.Log("로그인 되지 않았습니다.");
             return;
         }
+        if (currentLobby != null || matchmakingCo != null) return;
+
 
         await JoinLobbyWithCode(lobbyCode);
-
-        await JoinRelayServer(GetRelayCodeInLobby());
+        //await JoinRelayServer(GetRelayCodeInLobby());
     }
 
-    public async void LeaveGame()
+    public async void StopMatchMaking()
     {
-        try
-        {
-            //2. 현재 로비 정보 가져오기
-            if (currentLobby != null)
-            {
-                //3. 로비 떠나기
-                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId);
-                Debug.Log("로비에서 나감");
-            }
+        await LeaveLobby();
 
-            NetworkManager.Singleton.Shutdown(); // 호스트가 shutdown 시 다른 클라이언트들도 shutdown됨
-            //로비 생성 후, 4명이 모였을 때, 릴레이 할당, 게임 중 인원수가 가득차지 않으면 로비 연결 해제도 만들어야됨.
-            currentLobby = null;
-        }
-        catch (LobbyServiceException e)
+        if (matchmakingCo != null)
         {
-            Debug.LogError($"로비 또는 Relay 종료 실패: {e.Message}");
+            StopCoroutine(matchmakingCo);
+            matchmakingCo = null;
         }
+
+        isRelayExist = false;
+    }
+
+    public void LeaveGame()
+    {
+        NetworkManager.Singleton.Shutdown();
+        isRelayExist = false;
+            
+        StopMatchMaking();
     }
     #endregion
 
+
+    private IEnumerator CheckToRelayStart()
+    {
+        while(!isRelayExist)
+        {
+            if (currentLobby == null) yield break;
+
+            yield return new WaitForSeconds(1f);
+            if(currentLobby.Players.Count == maxPlayers)
+            {
+                Task<bool> task;
+                if (currentLobby.HostId == playerID)
+                    task = CreateRelayServer(currentLobby);
+                else
+                    task = JoinRelayServer(GetRelayCodeInLobby());
+
+                yield return new WaitUntil(() => task.IsCompleted);
+                isRelayExist = task.Result;
+            }
+        }
+
+        new WaitUntil(() => NetworkManager.Singleton.ConnectedClients.Count == maxPlayers);
+        //StartCoroutine(CheckRelayStatus(refreshTimerMax));
+
+        matchmakingCo = null;
+    }
+
+    //이부분 고쳐야됨
+    private IEnumerator CheckRelayStatus(float timer)
+    {
+        while(isRelayExist)
+        {
+            yield return new WaitForSeconds(timer);
+
+            if (NetworkManager.Singleton.ConnectedClients.Count < maxPlayers)
+            {
+                NetworkManager.Singleton.Shutdown();
+                yield return new WaitUntil(() => LeaveLobby().IsCompleted);
+                isRelayExist = false;
+                yield break;
+            }
+        }
+    }
 
     //호스트와 클라이언트 네트워크 매니저를 통해 전달
     private void StartHost()
