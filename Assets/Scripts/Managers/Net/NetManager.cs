@@ -17,8 +17,10 @@ public partial class NetManager : Singleton<NetManager>
     private string playerID;
     private float heartbeatTimer;
     private float heartbeatTimerMax = 15f;
+    private bool isHeartbeating = false;
     private float refreshTimer;
     private float refreshTimerMax = 1f;
+    private bool isRefreshing = false;
 
     private bool isRelayExist = false;
     private Coroutine matchmakingCo = null;
@@ -39,8 +41,6 @@ public partial class NetManager : Singleton<NetManager>
         {
             Debug.LogError("UGS Init Failed: " + e.Message);
         }
-
-
 
         //StartMatchButton.onClick.AddListener(() => StartMatchmaking());
         //JoinMatchButton.onClick.AddListener(() => JoinGameWithCode(FieldText.text));
@@ -89,9 +89,15 @@ public partial class NetManager : Singleton<NetManager>
             Debug.Log("로그인 되지 않았습니다.");
             return;
         }
-        if (currentLobby != null || matchmakingCo != null) return;
+
+        if (currentLobby != null || matchmakingCo != null)
+        {
+            return;
+        }
 
         await CreateNewLobby(lobbyName, isPrivte:true);
+
+        matchmakingCo = StartCoroutine(CheckToRelayStart());
     }
 
     public async void JoinGameRoom(string lobbyCode)
@@ -101,14 +107,27 @@ public partial class NetManager : Singleton<NetManager>
             Debug.Log("로그인 되지 않았습니다.");
             return;
         }
-        if (currentLobby != null || matchmakingCo != null) return;
 
+        if (currentLobby != null || matchmakingCo != null)
+        {
+            return;
+        }
 
         await JoinLobbyWithCode(lobbyCode);
         //await JoinRelayServer(GetRelayCodeInLobby());
+        matchmakingCo = StartCoroutine(CheckToRelayStart());
     }
 
-    public async void StopMatchMaking()
+    //로비에서 매치메이킹 중 나갔을 때
+    public void LeaveGame()
+    {
+        NetworkManager.Singleton.Shutdown();
+        isRelayExist = false;
+            
+        StopMatchMaking();
+    }
+
+    private async void StopMatchMaking()
     {
         await LeaveLobby();
 
@@ -118,15 +137,11 @@ public partial class NetManager : Singleton<NetManager>
             matchmakingCo = null;
         }
 
-        isRelayExist = false;
-    }
+        //혹시 모를 이벤트 콜백 제거
+        NetworkManager.Singleton.OnClientStopped -= OnClientStopped;
+        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
 
-    public void LeaveGame()
-    {
-        NetworkManager.Singleton.Shutdown();
         isRelayExist = false;
-            
-        StopMatchMaking();
     }
     #endregion
 
@@ -152,27 +167,10 @@ public partial class NetManager : Singleton<NetManager>
         }
 
         new WaitUntil(() => NetworkManager.Singleton.ConnectedClients.Count == maxPlayers);
-        //StartCoroutine(CheckRelayStatus(refreshTimerMax));
 
         matchmakingCo = null;
     }
 
-    //이부분 고쳐야됨
-    private IEnumerator CheckRelayStatus(float timer)
-    {
-        while(isRelayExist)
-        {
-            yield return new WaitForSeconds(timer);
-
-            if (NetworkManager.Singleton.ConnectedClients.Count < maxPlayers)
-            {
-                NetworkManager.Singleton.Shutdown();
-                yield return new WaitUntil(() => LeaveLobby().IsCompleted);
-                isRelayExist = false;
-                yield break;
-            }
-        }
-    }
 
     //호스트와 클라이언트 네트워크 매니저를 통해 전달
     private void StartHost()
@@ -181,39 +179,41 @@ public partial class NetManager : Singleton<NetManager>
         Debug.Log("호스트 시작");
 
         //클라이언트가 연결될 때마다 실행됨
-        //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        //NetworkManager.Singleton.OnClientDisconnectCallback += OnHostDisconnected;
+        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+
+        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
 
     private void StartClient()
     {
         NetworkManager.Singleton.StartClient();
         Debug.Log("클라이언트 시작");
+
+        NetworkManager.Singleton.OnClientStopped -= OnClientStopped;
+        NetworkManager.Singleton.OnClientStopped += OnClientStopped;
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        //최대 인원이 다 차면 바로 실행시키는 함수
-        OnPlayerJoined();
-    }
-
-    private void OnHostDisconnected(ulong clientId)
-    {
-        if (clientId == NetworkManager.Singleton.LocalClientId && NetworkManager.Singleton.IsHost)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnHostDisconnected;
-        }
-    }
-
-
-    private void OnPlayerJoined()
-    {
+        //최대 인원이 다 차면 바로 실행
         if (NetworkManager.Singleton.ConnectedClients.Count >= maxPlayers)
         {
             ChangeSceneForAllPlayers();
         }
     }
+
+    //누구 한명 게임 중 끊기면 전부 끊기게 설정
+    private void OnClientDisconnected(ulong clientId)
+    {
+        LeaveGame();
+    }
+    private void OnClientStopped(bool isHost)
+    {
+        LeaveGame();
+    }
+
 
     //씬 변경 함수
     private void ChangeSceneForAllPlayers()

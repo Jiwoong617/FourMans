@@ -103,13 +103,15 @@ public partial class NetManager //lobby
     //로비 연결을 위해서 호스트가 신호 보내기
     private async void HandleLobbyHeartbeat()
     {
-        if (currentLobby != null && currentLobby.HostId == playerID)
+        if (currentLobby != null && currentLobby.HostId == playerID && !isHeartbeating)
         {
             heartbeatTimer += Time.deltaTime;
             if (heartbeatTimer > heartbeatTimerMax)
             {
                 heartbeatTimer = 0f;
+                isHeartbeating = true;
                 await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
+                isHeartbeating = false;
             }
         }
     }
@@ -119,10 +121,12 @@ public partial class NetManager //lobby
         if(currentLobby != null)
         {
             refreshTimer += Time.deltaTime;
-            if(refreshTimer > refreshTimerMax)
+            if(refreshTimer > refreshTimerMax && !isRefreshing)
             {
                 refreshTimer = 0f;
+                isRefreshing = true;
                 currentLobby = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+                isRefreshing = false;
             }
         }
     }
