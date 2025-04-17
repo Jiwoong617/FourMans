@@ -34,6 +34,7 @@ public class TestScript : NetworkBehaviour
     [ClientRpc]
     private void MoveClientRpc(Vector3 pos)
     {
-        t.position = pos;
+        if(t != null)
+            t.position = pos;
     }
 }

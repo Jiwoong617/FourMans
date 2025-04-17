@@ -137,9 +137,12 @@ public partial class NetManager : Singleton<NetManager>
             matchmakingCo = null;
         }
 
-        //혹시 모를 이벤트 콜백 제거
-        NetworkManager.Singleton.OnClientStopped -= OnClientStopped;
-        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        if(NetworkManager.Singleton != null)
+        {
+            //혹시 모를 이벤트 콜백 제거
+            NetworkManager.Singleton.OnClientStopped -= OnClientStopped;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
 
         isRelayExist = false;
     }
@@ -220,7 +223,7 @@ public partial class NetManager : Singleton<NetManager>
     {
         if (NetworkManager.Singleton.IsHost)
         {
-            //NetworkManager.Singleton.SceneManager.LoadScene(gameplaySceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
+            NetworkManager.Singleton.SceneManager.LoadScene("GameScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
             //싱글로 처리하는 이유 - 서로다른 기계에서 처리하기 때문에 싱글로 처리
         }
     }
