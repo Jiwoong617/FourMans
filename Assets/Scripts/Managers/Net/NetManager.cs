@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Threading.Tasks;
+using Unity.Mathematics;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -82,22 +83,26 @@ public partial class NetManager : Singleton<NetManager>
         matchmakingCo = StartCoroutine(CheckToRelayStart());
     }
 
-    public async void MakeGameRoom(string lobbyName)
+    public async Task<bool> MakeGameRoom(string lobbyName)
     {
         if (!AuthenticationService.Instance.IsSignedIn)
         {
             Debug.Log("로그인 되지 않았습니다.");
-            return;
+            return false;
         }
 
         if (currentLobby != null || matchmakingCo != null)
         {
-            return;
+            return false;
         }
 
-        await CreateNewLobby(lobbyName, isPrivte:true);
-
-        matchmakingCo = StartCoroutine(CheckToRelayStart());
+        bool lobbyCreated = await CreateNewLobby(lobbyName, isPrivte:true);
+        if(lobbyCreated)
+        {
+            matchmakingCo = StartCoroutine(CheckToRelayStart());
+            return true;
+        }
+        return false;
     }
 
     public async void JoinGameRoom(string lobbyCode)

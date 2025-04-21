@@ -7,7 +7,7 @@ using System.Collections.Generic;
 public partial class NetManager //lobby
 {
     //로비 생성
-    private async Task CreateNewLobby(string lobbyName = "NewLobby", bool isPrivte = false)
+    private async Task<bool> CreateNewLobby(string lobbyName = "NewLobby", bool isPrivte = false)
     {
         try
         {
@@ -28,10 +28,12 @@ public partial class NetManager //lobby
 
             //로비를 생성했다면 host가 되어야됨
             //await CreateRelayServer(currentLobby); //로비 생성 후 릴레이 서버 내부에 접근
+            return true;
         }
         catch (LobbyServiceException e)
         {
             Debug.Log("Failed to Create Lobby: " + e);
+            return false;
         }
     }
 
