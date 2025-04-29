@@ -1,10 +1,10 @@
 using System.Collections;
 using TMPro;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class MainUI : UIBase
 {
@@ -13,22 +13,31 @@ public class MainUI : UIBase
         RandomMatchBtn,
         MakeRoomBtn,
         JoinMatchBtn,
-        QuitMatchBtn,
+        CancleMatchBtn,
     }
     enum Texts
     {
-        RandomMatchText,
-        MakeRoomText,
-        JoinMatchText,
         JoinCodeText,
+        MatchingText,
+        PlayerCountText,
+    }
+    enum Images
+    {
+        MatchingPanel,  
     }
     enum InputFields
     { 
         JoinCodeInputField,
     }
 
-    private bool isMakingGameroom = false;
+    private bool isMatching = false;
     private TextMeshProUGUI joinCode;
+    private TextMeshProUGUI matchingText;
+    private TextMeshProUGUI playerCountText;
+    private Image matchingPanel;
+
+    private Sequence matchingTextSeq;
+    private Coroutine checkPlayerCountCo;
 
     private void Start()
     {
@@ -45,58 +54,111 @@ public class MainUI : UIBase
     {
         Bind<Button>(typeof(Buttons));
         Bind<TextMeshProUGUI>(typeof(Texts));
+        Bind<Image>(typeof(Images));
         Bind<TMP_InputField>(typeof(InputFields));
 
         GetButton((int)Buttons.RandomMatchBtn).gameObject.BindEvent(RandomMatchBtn);
         GetButton((int)Buttons.MakeRoomBtn).gameObject.BindEvent(MakeRoomBtn);
         GetButton((int)Buttons.JoinMatchBtn).gameObject.BindEvent(JoinMatchBtn);
-        GetButton((int)Buttons.QuitMatchBtn).gameObject.BindEvent(QuitMatchBtn);
+        GetButton((int)Buttons.CancleMatchBtn).gameObject.BindEvent(CancleMatchBtn);
 
         joinCode = GetText((int)Texts.JoinCodeText);
+        matchingText = GetText((int)Texts.MatchingText);
+        playerCountText = GetText((int)Texts.PlayerCountText);
+
+        matchingPanel = GetImage((int)Images.MatchingPanel);
     }
 
-    IEnumerator testco()
-    {
-        while(true)
-        {
-            yield return new WaitForSeconds(1f);
-            Debug.Log($"lobby player : {(NetManager.Instance.currentLobby != null ? NetManager.Instance.currentLobby.Players.Count : 0)}");
-            Debug.Log($"connected client : {NetworkManager.Singleton.ConnectedClients.Count}");
-        }
-    }
 
+
+    #region Buttons
     private void RandomMatchBtn(PointerEventData data)
     {
+        if (isMatching) return;
+        isMatching = true;
+
         NetManager.Instance.StartMatchmaking();
+        ActiveMatchingPanel();
     }
 
     private async void MakeRoomBtn(PointerEventData data)
     {
-        if (isMakingGameroom) return;
-        isMakingGameroom = true;
+        if (isMatching) return;
 
-        bool isCreted = await NetManager.Instance.MakeGameRoom("GameRoom");
-        if(isCreted)
+        bool isCreated = await NetManager.Instance.MakeGameRoom("GameRoom");
+        if(isCreated)
         {
             joinCode.text = $"JoinCode : {NetManager.Instance.currentLobby.LobbyCode}";
-            isMakingGameroom = false;
+            isMatching = true;
+            ActiveMatchingPanel();
         }
         else
         {
-
         }
     }
 
     private void JoinMatchBtn(PointerEventData data)
     {
+        if (isMatching) return;
+        isMatching = true;
+
         TMP_InputField input = Get<TMP_InputField>((int)InputFields.JoinCodeInputField);
         if (input != null)
         {
             NetManager.Instance.JoinGameRoom(input.text);
+            ActiveMatchingPanel();
         }
     }
 
-    private void QuitMatchBtn(PointerEventData data)
+    private void CancleMatchBtn(PointerEventData data)
     {
+        if (matchingTextSeq != null)
+            matchingTextSeq.Kill();
+        if (checkPlayerCountCo != null)
+            StopCoroutine(checkPlayerCountCo);
+
+        isMatching = false;
+        NetManager.Instance.LeaveGame();
+        matchingPanel.gameObject.SetActive(false);
+
     }
+
+    private void ActiveMatchingPanel()
+    {
+        matchingPanel.gameObject.SetActive(true);
+        MatchingText();
+        checkPlayerCountCo = StartCoroutine(CheckPlayerCountCo());
+    }
+    #endregion
+
+    #region Texts
+    private void MatchingText()
+    {
+        if (matchingTextSeq != null)
+            matchingTextSeq.Kill();
+
+        matchingTextSeq = DOTween.Sequence()
+            .AppendCallback(() => matchingText.text = "Matching.")
+            .AppendInterval(0.5f)
+            .AppendCallback(() => matchingText.text = "Matching..")
+            .AppendInterval(0.5f)
+            .AppendCallback(() => matchingText.text = "Matching...")
+            .AppendInterval(0.5f)
+            .SetLoops(-1);
+    }
+
+    IEnumerator CheckPlayerCountCo()
+    {
+        if (checkPlayerCountCo != null)
+            yield break;
+
+        while (true)
+        {
+            yield return new WaitForSeconds(1f);
+
+            playerCountText.text = $"( {(NetManager.Instance.currentLobby != null ? NetManager.Instance.currentLobby.Players.Count : 0)} / 4 )";
+            //Debug.Log($"connected client : {NetworkManager.Singleton.ConnectedClients.Count}");
+        }
+    }
+    #endregion
 }
