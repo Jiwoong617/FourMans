@@ -174,7 +174,7 @@ public partial class NetManager : Singleton<NetManager>
             }
         }
 
-        new WaitUntil(() => NetworkManager.Singleton.ConnectedClients.Count == maxPlayers);
+        yield return new WaitUntil(() => NetworkManager.Singleton.ConnectedClients.Count == maxPlayers);
 
         matchmakingCo = null;
     }
@@ -208,7 +208,7 @@ public partial class NetManager : Singleton<NetManager>
         //최대 인원이 다 차면 바로 실행
         if (NetworkManager.Singleton.ConnectedClients.Count >= maxPlayers)
         {
-            ChangeSceneForAllPlayers();
+            StartCoroutine(ChangeSceneForAllPlayers());
         }
     }
 
@@ -224,10 +224,11 @@ public partial class NetManager : Singleton<NetManager>
 
 
     //씬 변경 함수
-    private void ChangeSceneForAllPlayers()
+    private IEnumerator ChangeSceneForAllPlayers()
     {
         if (NetworkManager.Singleton.IsHost)
         {
+            yield return new WaitForSeconds(2f);
             NetworkManager.Singleton.SceneManager.LoadScene("GameScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
             //싱글로 처리하는 이유 - 서로다른 기계에서 처리하기 때문에 싱글로 처리
         }

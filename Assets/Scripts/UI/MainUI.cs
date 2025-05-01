@@ -113,9 +113,15 @@ public class MainUI : UIBase
     private void CancleMatchBtn(PointerEventData data)
     {
         if (matchingTextSeq != null)
+        {
             matchingTextSeq.Kill();
+            matchingTextSeq = null;
+        }
         if (checkPlayerCountCo != null)
+        {
             StopCoroutine(checkPlayerCountCo);
+            checkPlayerCountCo = null;
+        }
 
         isMatching = false;
         NetManager.Instance.LeaveGame();
@@ -135,7 +141,10 @@ public class MainUI : UIBase
     private void MatchingText()
     {
         if (matchingTextSeq != null)
+        {
             matchingTextSeq.Kill();
+            matchingTextSeq = null;
+        }
 
         matchingTextSeq = DOTween.Sequence()
             .AppendCallback(() => matchingText.text = "Matching.")
@@ -144,6 +153,16 @@ public class MainUI : UIBase
             .AppendInterval(0.5f)
             .AppendCallback(() => matchingText.text = "Matching...")
             .AppendInterval(0.5f)
+            .AppendCallback(() => 
+            {
+                if (NetManager.Instance.currentLobby != null && NetManager.Instance.currentLobby.Players.Count == NetManager.Instance.currentLobby.MaxPlayers)
+                {
+                    matchingText.text = "Mathcing Completed!";
+                    matchingTextSeq.Kill();
+                    matchingTextSeq = null;
+                    GetButton((int)Buttons.CancleMatchBtn).gameObject.SetActive(false);
+                }
+            })
             .SetLoops(-1);
     }
 
