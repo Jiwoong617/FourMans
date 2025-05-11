@@ -8,7 +8,7 @@ public class PlayerController : NetworkBehaviour
     Vector2 dir = Vector2.zero;
     int rand;
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
         SetRandClientRpc();
     }
@@ -50,5 +50,11 @@ public class PlayerController : NetworkBehaviour
     {
         if(IsServer)
             rand = Random.Range(0, NetManager.Instance.currentLobby.MaxPlayers);
+    }
+
+    [ClientRpc]
+    public void OnHitObstaclesClientRpc(Vector2 pos)
+    {
+        transform.position = pos;
     }
 }

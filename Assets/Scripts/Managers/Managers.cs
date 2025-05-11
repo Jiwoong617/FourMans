@@ -8,3 +8,4 @@ public class Managers : Singleton<Managers>
     public static UIManager UI { get { return Instance._ui; } }
     public static ResourceManager Resource { get { return Instance._resource; } }
 }
+    
