@@ -1,27 +1,58 @@
 using Unity.Netcode;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Stage : NetworkBehaviour
 {
+    const string spinningObs = "SpinningObstacle";
+
+    List<Obstacle> obstacles = new List<Obstacle>();
     public int stageNum;
-    public Vector2 startPos;
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        
+        Init();
     }
 
-    public void Init()
+    private void Init()
     {
-        InitObstacle();
+        //수정 필요
+        InstantiateSpinningObstacle();
+
+        SetObstacleRestartPos();
+        SpawnObstacle();
     }
 
-    private void InitObstacle()
+    private void InstantiateSpinningObstacle()
     {
-        GameObject obstacle = Utils.FindChild(gameObject, "Obstacle");
-        Obstacle[] ob = obstacle.GetComponentsInChildren<Obstacle>();
-        foreach(Obstacle o in ob)
-            o.SetRestartPos(startPos);
+        if (!IsServer) return;
+
+        GameObject obstacle = Utils.FindChild(gameObject, spinningObs);
+        foreach (Transform t in obstacle.transform)
+        {
+            //spawn
+            SpinningObstacle so = Instantiate(Managers.Resource.LoadSpinningObstacle(), t.position, Quaternion.identity);
+            obstacles.Add(so);
+        }
     }
 
+    private void SpawnObstacle()
+    {
+        foreach (Obstacle ob in obstacles)
+            ob.GetComponent<NetworkObject>()?.Spawn();
+    }
+
+    public void SetObstacleRestartPos()
+    {
+        foreach (Obstacle o in obstacles)
+            o.SetRestartPos(Vector2.zero);
+    }
+
+    public void DespawnStage()
+    {
+        foreach(Obstacle ob in obstacles)
+            ob.GetComponent<NetworkObject>().Despawn();
+
+        transform.GetComponent<NetworkObject>().Despawn();
+    }
 }

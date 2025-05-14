@@ -5,12 +5,18 @@ public class PlayerController : NetworkBehaviour
 {
     readonly Vector2[] directions = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
 
-    Vector2 dir = Vector2.zero;
+    private Rigidbody2D rb;
+    private Vector2 dir = Vector2.zero;
     int rand;
 
     public override void OnNetworkSpawn()
     {
         SetRandClientRpc();
+    }
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
     }
 
     private void Update()
@@ -26,7 +32,7 @@ public class PlayerController : NetworkBehaviour
         SetDir();
         transform.Translate(dir * Time.deltaTime);
 
-        MoveClientRpc(transform.position);
+        SetPosClientRpc(transform.position);
     }
 
     private void SetDir()
@@ -40,7 +46,7 @@ public class PlayerController : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void MoveClientRpc(Vector3 pos)
+    public void SetPosClientRpc(Vector3 pos)
     {
         transform.position = pos;
     }
@@ -50,11 +56,5 @@ public class PlayerController : NetworkBehaviour
     {
         if(IsServer)
             rand = Random.Range(0, NetManager.Instance.currentLobby.MaxPlayers);
-    }
-
-    [ClientRpc]
-    public void OnHitObstaclesClientRpc(Vector2 pos)
-    {
-        transform.position = pos;
     }
 }

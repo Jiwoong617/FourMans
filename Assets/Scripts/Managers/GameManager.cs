@@ -47,16 +47,19 @@ public class GameManager : NetworkBehaviour
         {
             Debug.Log("StageClear");
             //TODO
+            //startpos는 0,0으로 고정
+            //캐릭터 다음 스테이지 startpos로 이동
+            player.SetPosClientRpc(Vector2.zero);
+
             //현재 스테이지 삭제
             if (currentStage != null)
             {
-                currentStage.GetComponent<NetworkObject>().Despawn();
-                Destroy(currentStage);
+                currentStage.DespawnStage();
             }
             //다음 스테이지 생성
             currentStage = Instantiate(StageList[nextStage]);
             currentStage.GetComponent<NetworkObject>().Spawn();
-            //캐릭터 다음 스테이지 startpos로 이동
+
         }
     }
 }

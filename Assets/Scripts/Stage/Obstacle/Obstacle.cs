@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class Obstacle : NetworkBehaviour
 {
+    [SerializeField]
+    protected float speed;
+
     protected Vector2 restartPos;
 
     public void SetRestartPos(Vector2 pos) => restartPos = pos;
@@ -20,6 +23,6 @@ public class Obstacle : NetworkBehaviour
         if (pc == null)
             return;
 
-        pc.OnHitObstaclesClientRpc(restartPos);
+        pc.SetPosClientRpc(restartPos);
     }
 }
