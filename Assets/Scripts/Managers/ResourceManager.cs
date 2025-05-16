@@ -5,12 +5,20 @@ using UnityEngine;
 public class ResourceManager
 {
     private SpinningObstacle so = null;
+    private PatrolObstacle po = null;
 
     public SpinningObstacle LoadSpinningObstacle()
     {
         if (so == null)
             return Load<SpinningObstacle>("Prefabs/Obstacle/SpinningObstacle");
         return so;
+    }
+    
+    public PatrolObstacle LoadPatrolObstacle()
+    {
+        if (so == null)
+            return Load<PatrolObstacle>("Prefabs/Obstacle/PatolObstacle");
+        return po;
     }
 
     public T Load<T>(string path) where T : Object

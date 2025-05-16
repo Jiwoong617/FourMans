@@ -8,6 +8,11 @@ public class Obstacle : NetworkBehaviour
 
     protected Vector2 restartPos;
 
+    public virtual void Init(float speed, params Vector3[] pos) 
+    {
+        this.speed = speed;
+    }
+
     public void SetRestartPos(Vector2 pos) => restartPos = pos;
 
     protected void OnTriggerEnter2D(Collider2D collision)
@@ -24,5 +29,11 @@ public class Obstacle : NetworkBehaviour
             return;
 
         pc.SetPosClientRpc(restartPos);
+    }
+
+    [ClientRpc]
+    protected void SyncTransfomClientRpc(Vector3 pos)
+    {
+        transform.position = pos;
     }
 }
