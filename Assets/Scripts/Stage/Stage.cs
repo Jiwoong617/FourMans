@@ -7,6 +7,7 @@ public class Stage : NetworkBehaviour
 {
     const string spinningObs = "SpinningObstacle";
     const string patrolObs = "PatrolObstacle";
+    const string rotatingObs = "RotatingObstacle";
 
     List<Obstacle> obstacles = new List<Obstacle>();
     public int stageNum;
@@ -29,11 +30,14 @@ public class Stage : NetworkBehaviour
         if (!IsServer) return;
         InstantiateSpinningObstacle();
         InstantiatePatrolObstacle();
+        InstantiateRotatingObstacdle();
     }
 
     private void InstantiateSpinningObstacle()
     {
         GameObject obstacle = Utils.FindChild(gameObject, spinningObs);
+        if (obstacle == null) return;
+
         foreach (Transform t in obstacle.transform)
         {
             //spawn
@@ -45,16 +49,41 @@ public class Stage : NetworkBehaviour
     private void InstantiatePatrolObstacle()
     {
         GameObject obstacle = Utils.FindChild(gameObject, patrolObs);
+        if (obstacle == null) return;
+
         foreach (Transform t in obstacle.transform)
         {
             //spawn
             PatrolObstacle po = Instantiate(Managers.Resource.LoadPatrolObstacle(), t.position, Quaternion.identity);
             Vector3[] pos = t.GetComponentsInChildren<Transform>().Select(x => x.position).ToArray();
-            
-            //TODO : obstacle speed
-            po.Init(5f, pos);
+
+            float speed;
+            if (!float.TryParse(t.name.Split('_')[^1], out speed))
+                speed = 3f;
+
+            po.Init(speed, pos);
 
             obstacles.Add(po);
+        }
+    }
+
+    private void InstantiateRotatingObstacdle()
+    {
+        GameObject obstacle = Utils.FindChild(gameObject, rotatingObs);
+        if (obstacle == null) return;
+
+        foreach (Transform t in obstacle.transform)
+        {
+            //spawn
+            RotatingObstacle ro = Instantiate(Managers.Resource.LoadRotatingObstacle(), t.position, Quaternion.identity);
+
+            float speed;
+            if (!float.TryParse(t.name.Split('_')[^1], out speed))
+                speed = 60f;
+
+            ro.Init(speed, obstacle.transform.position);
+
+            obstacles.Add(ro);
         }
     }
 
@@ -73,8 +102,8 @@ public class Stage : NetworkBehaviour
     public void DespawnStage()
     {
         foreach(Obstacle ob in obstacles)
-            ob.GetComponent<NetworkObject>().Despawn();
+            ob.GetComponent<NetworkObject>().Despawn(true);
 
-        transform.GetComponent<NetworkObject>().Despawn();
+        transform.GetComponent<NetworkObject>().Despawn(true);
     }
 }

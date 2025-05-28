@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public class PatrolObstacle : Obstacle
@@ -18,7 +19,7 @@ public class PatrolObstacle : Obstacle
             patrolPos.Add(p);
     }
 
-    private void Patrol ()
+    private void Patrol()
     {
         if (!IsServer) return;
 
@@ -27,6 +28,12 @@ public class PatrolObstacle : Obstacle
 
         Vector3 dir = (patrolPos[idx] - transform.position).normalized;
         Vector3 pos = transform.position + dir * speed * Time.deltaTime;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+
         SyncTransfomClientRpc(pos);
+        SyncRotationClientRpc(angle);
     }
+
+    [ClientRpc]
+    private void SyncRotationClientRpc(float angle) => transform.rotation = Quaternion.Euler(0, 0, angle);
 }
