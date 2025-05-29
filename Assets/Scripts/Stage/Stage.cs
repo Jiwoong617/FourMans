@@ -10,7 +10,6 @@ public class Stage : NetworkBehaviour
     const string rotatingObs = "RotatingObstacle";
 
     List<Obstacle> obstacles = new List<Obstacle>();
-    public int stageNum;
 
     public override void OnNetworkSpawn()
     {
@@ -55,7 +54,7 @@ public class Stage : NetworkBehaviour
         {
             //spawn
             PatrolObstacle po = Instantiate(Managers.Resource.LoadPatrolObstacle(), t.position, Quaternion.identity);
-            Vector3[] pos = t.GetComponentsInChildren<Transform>().Select(x => x.position).ToArray();
+            Vector3[] pos = t.GetComponentsInChildren<Transform>().Where(t => t != transform).Select(x => x.position).ToArray();
 
             float speed;
             if (!float.TryParse(t.name.Split('_')[^1], out speed))
@@ -72,18 +71,20 @@ public class Stage : NetworkBehaviour
         GameObject obstacle = Utils.FindChild(gameObject, rotatingObs);
         if (obstacle == null) return;
 
-        foreach (Transform t in obstacle.transform)
+        foreach (Transform rotateP in obstacle.transform)
         {
             //spawn
-            RotatingObstacle ro = Instantiate(Managers.Resource.LoadRotatingObstacle(), t.position, Quaternion.identity);
+            foreach(Transform roTrans in rotateP)
+            {
+                RotatingObstacle ro = Instantiate(Managers.Resource.LoadRotatingObstacle(), roTrans.position, Quaternion.identity);
+                float speed;
+                if (!float.TryParse(rotateP.name.Split('_')[^1], out speed))
+                    speed = 60f;
 
-            float speed;
-            if (!float.TryParse(t.name.Split('_')[^1], out speed))
-                speed = 60f;
+                ro.Init(speed, rotateP.position);
 
-            ro.Init(speed, obstacle.transform.position);
-
-            obstacles.Add(ro);
+                obstacles.Add(ro);
+            }
         }
     }
 

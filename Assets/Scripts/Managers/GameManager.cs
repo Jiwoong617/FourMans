@@ -10,6 +10,7 @@ public class GameManager : NetworkBehaviour
 
     private static Stage[] StageList;
     private Stage currentStage;
+    private int stageNum = 0;
     [SerializeField]
     private PlayerController player;
 
@@ -32,21 +33,29 @@ public class GameManager : NetworkBehaviour
         {
             //플레이어 생성
             player = Instantiate(player);
-            player.GetComponent<NetworkObject>().Spawn();
+            NetworkObject obj = player.GetComponent<NetworkObject>();
+            obj.Spawn();
 
-            OnStageClear(0);
+            OnStageClear();
+
+            InitCameraClientRpc(obj.NetworkObjectId);
         }
     }
 
-    public void OnStageClear(int nextStage)
+    [ClientRpc]
+    private void InitCameraClientRpc(ulong playerId)
     {
-        if (StageList == null || nextStage >= StageList.Length)
+        Utils.GetOrAddComponent<CameraController>(Camera.main.gameObject).SetPlayer(playerId);
+    }
+
+    public void OnStageClear()
+    {
+        if (StageList == null || stageNum >= StageList.Length)
             return;
 
         if(IsServer)
         {
             Debug.Log("StageClear");
-            //TODO
             //startpos는 0,0으로 고정
             //캐릭터 다음 스테이지 startpos로 이동
             player.SetPosClientRpc(Vector2.zero);
@@ -57,9 +66,11 @@ public class GameManager : NetworkBehaviour
                 currentStage.DespawnStage();
             }
             //다음 스테이지 생성
-            currentStage = Instantiate(StageList[nextStage]);
+            currentStage = Instantiate(StageList[stageNum]);
             currentStage.GetComponent<NetworkObject>().Spawn();
 
         }
+
+        stageNum++;
     }
 }

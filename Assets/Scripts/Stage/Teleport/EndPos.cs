@@ -7,7 +7,7 @@ public class EndPos : MonoBehaviour
     {
         if(collision.GetComponent<PlayerController>() != null)
         {
-            GameManager.instance.OnStageClear(transform.root.GetComponent<Stage>().stageNum + 1);
+            GameManager.instance.OnStageClear();
         }
     }
 }
