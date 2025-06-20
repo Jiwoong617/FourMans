@@ -7,6 +7,7 @@ public class ResourceManager
     private SpinningObstacle so = null;
     private PatrolObstacle po = null;
     private RotatingObstacle ro = null;
+    private ProjectileObstacle pro = null;
 
     public SpinningObstacle LoadSpinningObstacle()
     {
@@ -27,6 +28,13 @@ public class ResourceManager
         if (ro == null)
             return Load<RotatingObstacle>("Prefabs/Obstacle/RotatingObstacle");
         return ro;
+    }
+    
+    public ProjectileObstacle LoadProjectileObstacle()
+    {
+        if (pro == null)
+            return Load<ProjectileObstacle>("Prefabs/Obstacle/ProjectileObstacle");
+        return pro;
     }
 
     public T Load<T>(string path) where T : Object

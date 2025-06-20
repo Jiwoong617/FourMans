@@ -10,9 +10,19 @@ public class GameManager : NetworkBehaviour
 
     private static Stage[] StageList;
     private Stage currentStage;
-    private int stageNum = 0;
     [SerializeField]
     private PlayerController player;
+
+    private int stageNum = 0;
+    private int _life = 3;
+    private int life
+    {
+        get { return _life; }
+        set
+        {
+            _life = value;
+        }
+    }
 
     private void Awake()
     {

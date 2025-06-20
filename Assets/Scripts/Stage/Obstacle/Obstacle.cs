@@ -13,7 +13,7 @@ public class Obstacle : NetworkBehaviour
         this.speed = speed;
     }
 
-    public void SetRestartPos(Vector2 pos) => restartPos = pos;
+    public virtual void SetRestartPos(Vector2 pos) => restartPos = pos;
 
     protected void OnTriggerEnter2D(Collider2D collision)
     {

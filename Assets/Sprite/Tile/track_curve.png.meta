@@ -116,12 +116,12 @@ TextureImporter:
       name: track_curve_0
       rect:
         serializedVersion: 2
-        x: 5
+        x: 0
         y: 0
-        width: 59
-        height: 59
+        width: 64
+        height: 64
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 6f7fcf34e126eab479b6c881c379465e
     internalID: 0
     vertices: []
     indices: 

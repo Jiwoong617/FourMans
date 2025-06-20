@@ -8,6 +8,7 @@ public class Stage : NetworkBehaviour
     const string spinningObs = "SpinningObstacle";
     const string patrolObs = "PatrolObstacle";
     const string rotatingObs = "RotatingObstacle";
+    const string projectileObs = "ProjectileObstacle";
 
     List<Obstacle> obstacles = new List<Obstacle>();
 
@@ -30,6 +31,7 @@ public class Stage : NetworkBehaviour
         InstantiateSpinningObstacle();
         InstantiatePatrolObstacle();
         InstantiateRotatingObstacdle();
+        InstantiateProjectileObstacdle();
     }
 
     private void InstantiateSpinningObstacle()
@@ -53,8 +55,8 @@ public class Stage : NetworkBehaviour
         foreach (Transform t in obstacle.transform)
         {
             //spawn
-            PatrolObstacle po = Instantiate(Managers.Resource.LoadPatrolObstacle(), t.position, Quaternion.identity);
-            Vector3[] pos = t.GetComponentsInChildren<Transform>().Where(t => t != transform).Select(x => x.position).ToArray();
+            PatrolObstacle po = Instantiate(Managers.Resource.LoadPatrolObstacle(), t.GetChild(0).transform.position, Quaternion.identity);
+            Vector3[] pos = t.GetComponentsInChildren<Transform>().Where(x => x != t.transform).Select(x => x.position).ToArray();
 
             float speed;
             if (!float.TryParse(t.name.Split('_')[^1], out speed))
@@ -85,6 +87,25 @@ public class Stage : NetworkBehaviour
 
                 obstacles.Add(ro);
             }
+        }
+    }
+
+    private void InstantiateProjectileObstacdle()
+    {
+        GameObject obstacle = Utils.FindChild(gameObject, projectileObs);
+        if (obstacle == null) return;
+
+        foreach (Transform proj in obstacle.transform)
+        {
+            ProjectileObstacle pro = Instantiate(Managers.Resource.LoadProjectileObstacle(), proj.GetChild(0).transform.position, Quaternion.identity);
+            Vector3[] pos = proj.GetComponentsInChildren<Transform>().Where(x => x != proj.transform).Select(x => x.position).ToArray();
+            float speed;
+            if (!float.TryParse(proj.name.Split('_')[^1], out speed))
+                speed = 3f;
+
+            pro.Init(speed, pos);
+
+            obstacles.Add(pro);
         }
     }
 
